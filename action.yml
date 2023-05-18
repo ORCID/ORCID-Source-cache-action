@@ -1,0 +1,44 @@
+name: 'seed_maven_cache'
+description: 'seed a maven cache'
+
+inputs:
+  version_tag_numeric:
+    description: 'version tag to use'
+    required: false
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: adjust the path to include the actions path so scripts in the action can be run
+      run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+      shell: bash
+
+    - name: download maven dependencies
+      run: |
+        mvn -T 1C --batch-mode dependency:resolve --fail-never
+      shell: bash
+
+    - name: show maven repo
+      run: |
+        if [[ -d ~/.m2/repository/ ]];then
+          find ~/.m2/repository/
+        fi
+      shell: bash
+
+    - name: bump version of the parent pom and connected projects to download more dependencies
+      run: |
+        mvn -T 1C --batch-mode versions:set \
+            -DnewVersion="$version_tag_numeric" -DgenerateBackupPoms=false
+      shell: bash
+      env:
+        version_tag_numeric: "${{ inputs.version_tag_numeric }}"
+
+    - name: show maven repo
+      run: |
+        if [[ -d ~/.m2/repository/ ]];then
+          find ~/.m2/repository/
+        fi
+      shell: bash
+
+
